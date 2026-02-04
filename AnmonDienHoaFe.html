@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Ăn mòn Điện hóa Sắt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes pulse-custom {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse-custom {
+            animation: pulse-custom 2s infinite;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-slate-800 p-4 flex justify-center">
+
+    <div class="max-w-5xl w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        
+        <!-- Header -->
+        <div class="bg-slate-800 p-6 text-white text-center">
+            <h1 class="text-2xl font-bold uppercase tracking-wide">Sự ăn mòn điện hóa sắt</h1>
+            <p class="text-blue-300 mt-1 font-medium italic">Thiết kế: Nguyễn Mạnh Hưng</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-12 gap-0">
+            
+            <!-- Simulation Area -->
+            <div class="md:col-span-8 p-6 bg-white">
+                <div class="relative border-2 border-slate-100 rounded-xl overflow-hidden bg-white shadow-inner h-[450px]">
+                    <svg id="sim-svg" viewBox="0 0 140 100" class="w-full h-full">
+                        <!-- Bầu khí quyển ẩm -->
+                        <rect x="0" y="0" width="140" height="40" fill="#f0f9ff" />
+                        <text x="70" y="10" text-anchor="middle" font-size="3" fill="#0369a1" font-weight="bold">KHÔNG KHÍ ẨM (O₂, H₂O)</text>
+
+                        <!-- Giọt dung dịch điện li -->
+                        <path d="M10 60 Q70 15 130 60" fill="#bae6fd" opacity="0.6" stroke="#0ea5e9" stroke-width="0.5" />
+                        <text x="110" y="35" font-size="2.5" fill="#0369a1" font-weight="bold">Lớp dung dịch điện li</text>
+
+                        <!-- Vật bằng gang -->
+                        <rect x="10" y="60" width="120" height="30" fill="#94a3b8" />
+                        <text x="70" y="85" text-anchor="middle" font-size="4" fill="#334155" font-weight="bold">VẬT BẰNG GANG (Fe + C)</text>
+
+                        <!-- Cathode (C) -->
+                        <rect x="40" y="60" width="10" height="5" fill="#1e293b" />
+                        <text x="45" y="64" text-anchor="middle" font-size="3" fill="white" font-weight="bold">C</text>
+                        <circle cx="45" cy="70" r="2.5" fill="white" stroke="#1e293b" stroke-width="0.5" />
+                        <text x="45" y="71" text-anchor="middle" font-size="3" fill="#1e293b" font-weight="bold">+</text>
+                        <text x="45" y="77" text-anchor="middle" font-size="2.5" fill="#1e293b" font-weight="bold">Cathode</text>
+
+                        <!-- Anode (Fe) -->
+                        <rect x="90" y="60" width="10" height="5" fill="#64748b" stroke="#475569" stroke-width="0.3" />
+                        <text x="95" y="64" text-anchor="middle" font-size="3" fill="white" font-weight="bold">Fe</text>
+                        <circle cx="95" cy="70" r="2.5" fill="white" stroke="#475569" stroke-width="0.5" />
+                        <text x="95" y="71" text-anchor="middle" font-size="3" fill="#475569" font-weight="bold">-</text>
+                        <text x="95" y="77" text-anchor="middle" font-size="2.5" fill="#475569" font-weight="bold">Anode</text>
+
+                        <!-- Electron flow indicator -->
+                        <path d="M90 65 L55 65" stroke="#ef4444" stroke-width="0.5" stroke-dasharray="1,1" marker-end="url(#arrow)" />
+                        <text x="72.5" y="64" text-anchor="middle" font-size="2" fill="#ef4444" font-weight="bold">Dòng e-</text>
+
+                        <!-- Containers for dynamic particles -->
+                        <g id="electron-layer"></g>
+                        <g id="ion-fe-layer"></g>
+                        <g id="ion-oh-layer"></g>
+                        <g id="rust-layer"></g>
+
+                        <!-- Oxygen reduction info -->
+                        <text x="25" y="25" font-size="2.5" fill="#ef4444" font-weight="bold">1/2 O₂ + H₂O + 2e → 2OH⁻</text>
+                        <path d="M45 28 Q45 40 45 58" stroke="#ef4444" stroke-width="0.3" stroke-dasharray="1,1" fill="none" marker-end="url(#arrow-red)" />
+
+                        <defs>
+                            <marker id="arrow" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+                                <path d="M0,0 L0,6 L6,3 z" fill="#ef4444" />
+                            </marker>
+                            <marker id="arrow-red" markerWidth="10" markerHeight="10" refX="0" refY="3" orient="auto" markerUnits="strokeWidth">
+                                <path d="M0,0 L0,6 L6,3 z" fill="#ef4444" />
+                            </marker>
+                        </defs>
+                    </svg>
+
+                    <!-- Legend -->
+                    <div class="absolute top-2 left-2 flex flex-col gap-1 bg-white/80 p-2 rounded border border-slate-200 text-[10px] backdrop-blur-sm">
+                        <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-yellow-400"></div> Electron (e-)</div>
+                        <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-blue-500"></div> Ion Fe<sup>2+</sup> (di chuyển ra bề mặt)</div>
+                        <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-emerald-500"></div> Ion OH<sup>-</sup> (di chuyển ra bề mặt)</div>
+                        <div class="flex items-center gap-1"><div class="w-2 h-2 rounded-full bg-orange-800"></div> Gỉ sắt (hình thành tại bề mặt)</div>
+                    </div>
+                </div>
+
+                <!-- Controls -->
+                <div class="flex gap-4 mt-6 justify-center">
+                    <button id="btn-toggle" class="flex items-center gap-2 px-6 py-3 rounded-full font-bold text-white transition-all shadow-lg hover:scale-105 active:scale-95 bg-emerald-600 hover:bg-emerald-700">
+                        <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        <svg id="pause-icon" class="hidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+                        <span id="btn-text">Bắt đầu ăn mòn</span>
+                    </button>
+                    <button id="btn-reset" class="flex items-center gap-2 px-6 py-3 rounded-full font-bold bg-slate-200 text-slate-700 hover:bg-slate-300 transition-all shadow-md active:scale-95">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                        Làm mới
+                    </button>
+                </div>
+            </div>
+
+            <!-- Theory Area -->
+            <div class="md:col-span-4 p-6 bg-slate-50 border-l border-slate-200 overflow-y-auto max-h-[550px]">
+                <h3 class="font-bold text-slate-800 border-b-2 border-slate-200 pb-2 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-blue-600"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+                    CƠ CHẾ ĂN MÒN
+                </h3>
+                
+                <div class="mt-4 space-y-6">
+                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-blue-500">
+                        <p class="text-xs font-bold text-blue-700 uppercase">1. Quá trình oxi hóa</p>
+                        <p class="text-sm mt-1 font-mono text-slate-600">Fe → Fe<sup>2+</sup> + 2e</p>
+                        <p class="text-[10px] text-slate-500 mt-1 italic">Xảy ra tại Anode. Ion Fe<sup>2+</sup> di chuyển ra phía bề mặt giọt nước.</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-emerald-500">
+                        <p class="text-xs font-bold text-emerald-700 uppercase">2. Quá trình khử</p>
+                        <p class="text-sm mt-1 font-mono text-slate-600">O₂ + 2H₂O + 4e → 4OH⁻</p>
+                        <p class="text-[10px] text-slate-500 mt-1 italic">Xảy ra tại Cathode. Ion OH<sup>-</sup> khuếch tán ra bề mặt.</p>
+                    </div>
+
+                    <div class="bg-white p-3 rounded-lg shadow-sm border-l-4 border-orange-700">
+                        <p   class="text-xs font-bold text-orange-800 uppercase">3. Phản ứng tạo gỉ</p>
+                        <p class="text-[10px] text-slate-600 mt-1">
+                            Fe<sup>2+</sup> + OH⁻ → Fe(OH)₂ ↓<br/>
+                            Kết hợp với O₂ tạo gỉ sắt màu nâu đỏ tại ranh giới bề mặt.
+                        </p>
+                    </div>
+
+                    <div class="p-3 rounded-lg bg-blue-100 text-blue-800 border border-blue-200">
+                        <h4 class="text-xs font-bold flex items-center gap-1 uppercase mb-2 italic">Ghi chú mô phỏng:</h4>
+                        <p class="text-[10px]">Các hạt gỉ sắt hình thành chủ yếu tại vùng ranh giới nơi nồng độ oxy cao nhất và các ion gặp nhau.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-100 p-4 border-t border-slate-200 flex justify-between items-center px-8 text-[10px] font-medium text-slate-600">
+            <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+                <span>Electron di chuyển trong vật liệu</span>
+            </div>
+            <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z"/></svg>
+                <span>Ions khuếch tán ra bề mặt để phản ứng</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simulation variables
+        let isRunning = false;
+        let electrons = [];
+        let feIons = [];
+        let ohIons = [];
+        let rustParticles = [];
+        let lastTime = 0;
+
+        const electronLayer = document.getElementById('electron-layer');
+        const feIonLayer = document.getElementById('ion-fe-layer');
+        const ohIonLayer = document.getElementById('ion-oh-layer');
+        const rustLayer = document.getElementById('rust-layer');
+
+        // Factory functions
+        function createElectron() {
+            return {
+                id: Math.random(),
+                x: 95, y: 65,
+                targetX: 45, targetY: 65,
+                progress: 0,
+                speed: 0.015 + Math.random() * 0.01
+            };
+        }
+
+        function createFeIon() {
+            return {
+                id: Math.random(),
+                x: 95, y: 58,
+                targetX: 70 + (Math.random() - 0.5) * 40,
+                targetY: 35 + Math.random() * 10,
+                progress: 0,
+                speed: 0.005 + Math.random() * 0.005
+            };
+        }
+
+        function createOhIon() {
+            return {
+                id: Math.random(),
+                x: 45, y: 58,
+                targetX: 65 + (Math.random() - 0.5) * 40,
+                targetY: 35 + Math.random() * 10,
+                progress: 0,
+                speed: 0.005 + Math.random() * 0.005
+            };
+        }
+
+        function createRust(x, y) {
+            return {
+                id: Math.random(),
+                x, y,
+                size: 1.5 + Math.random() * 2.5,
+                opacity: 0,
+                targetOpacity: 0.7 + Math.random() * 0.3
+            };
+        }
+
+        // Main Animation Loop
+        function animate(time) {
+            if (!lastTime) lastTime = time;
+            const deltaTime = time - lastTime;
+
+            if (isRunning && deltaTime > 30) {
+                // Production logic
+                if (Math.random() > 0.85) {
+                    electrons.push(createElectron());
+                    feIons.push(createFeIon());
+                }
+
+                // Update electrons
+                electrons = electrons.filter(e => {
+                    if (e.progress < 1) {
+                        e.progress += e.speed;
+                        return true;
+                    } else {
+                        // When electron reaches Cathode, trigger OH- creation
+                        ohIons.push(createOhIon());
+                        return false;
+                    }
+                });
+
+                // Update Fe2+ ions
+                feIons = feIons.filter(ion => {
+                    if (ion.progress < 1) {
+                        ion.progress += ion.speed;
+                        ion.currentX = ion.x + (ion.targetX - ion.x) * ion.progress;
+                        ion.currentY = ion.y + (ion.targetY - ion.y) * ion.progress;
+                        return true;
+                    } else {
+                        if (Math.random() > 0.5) rustParticles.push(createRust(ion.currentX, ion.currentY));
+                        return false;
+                    }
+                });
+
+                // Update OH- ions
+                ohIons = ohIons.filter(ion => {
+                    if (ion.progress < 1) {
+                        ion.progress += ion.speed;
+                        ion.currentX = ion.x + (ion.targetX - ion.x) * ion.progress;
+                        ion.currentY = ion.y + (ion.targetY - ion.y) * ion.progress;
+                        return true;
+                    } else {
+                        if (Math.random() > 0.5) rustParticles.push(createRust(ion.currentX, ion.currentY));
+                        return false;
+                    }
+                });
+
+                // Update Rust particles
+                rustParticles.forEach(p => {
+                    if (p.opacity < p.targetOpacity) p.opacity += 0.02;
+                });
+                if (rustParticles.length > 60) rustParticles.shift();
+
+                lastTime = time;
+                draw();
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function draw() {
+            // Draw Electrons
+            electronLayer.innerHTML = electrons.map(e => {
+                const cx = e.x + (e.targetX - e.x) * e.progress;
+                return `<circle cx="${cx}" cy="${e.y}" r="0.8" fill="#fbbf24" />`;
+            }).join('');
+
+            // Draw Fe2+
+            feIonLayer.innerHTML = feIons.map(ion => {
+                const x = ion.currentX || ion.x;
+                const y = ion.currentY || ion.y;
+                return `<g><circle cx="${x}" cy="${y}" r="1.5" fill="#3b82f6" /><text x="${x}" y="${y + 0.5}" text-anchor="middle" font-size="1.2" fill="white" font-weight="bold">Fe2+</text></g>`;
+            }).join('');
+
+            // Draw OH-
+            ohIonLayer.innerHTML = ohIons.map(ion => {
+                const x = ion.currentX || ion.x;
+                const y = ion.currentY || ion.y;
+                return `<g><circle cx="${x}" cy="${y}" r="1.5" fill="#10b981" /><text x="${x}" y="${y + 0.5}" text-anchor="middle" font-size="1.2" fill="white" font-weight="bold">OH-</text></g>`;
+            }).join('');
+
+            // Draw Rust
+            rustLayer.innerHTML = rustParticles.map(p => {
+                return `<circle cx="${p.x}" cy="${p.y}" r="${p.size}" fill="#9a3412" opacity="${p.opacity}" />`;
+            }).join('');
+        }
+
+        // Controls
+        const btnToggle = document.getElementById('btn-toggle');
+        const btnReset = document.getElementById('btn-reset');
+        const playIcon = document.getElementById('play-icon');
+        const pauseIcon = document.getElementById('pause-icon');
+        const btnText = document.getElementById('btn-text');
+
+        btnToggle.addEventListener('click', () => {
+            isRunning = !isRunning;
+            if (isRunning) {
+                btnToggle.classList.replace('bg-emerald-600', 'bg-amber-500');
+                btnToggle.classList.replace('hover:bg-emerald-700', 'hover:bg-amber-600');
+                playIcon.classList.add('hidden');
+                pauseIcon.classList.remove('hidden');
+                btnText.innerText = 'Tạm dừng';
+            } else {
+                btnToggle.classList.replace('bg-amber-500', 'bg-emerald-600');
+                btnToggle.classList.replace('hover:bg-amber-600', 'hover:bg-emerald-700');
+                playIcon.classList.remove('hidden');
+                pauseIcon.classList.add('hidden');
+                btnText.innerText = 'Bắt đầu ăn mòn';
+            }
+        });
+
+        btnReset.addEventListener('click', () => {
+            isRunning = false;
+            electrons = [];
+            feIons = [];
+            ohIons = [];
+            rustParticles = [];
+            btnToggle.classList.replace('bg-amber-500', 'bg-emerald-600');
+            btnToggle.classList.replace('hover:bg-amber-600', 'hover:bg-emerald-700');
+            playIcon.classList.remove('hidden');
+            pauseIcon.classList.add('hidden');
+            btnText.innerText = 'Bắt đầu ăn mòn';
+            draw();
+        });
+
+        // Initialize
+        requestAnimationFrame(animate);
+
+    </script>
+</body>
+</html>
